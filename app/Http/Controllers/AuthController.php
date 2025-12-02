@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OTPMail;
 
 class AuthController extends Controller
 {
@@ -16,7 +18,7 @@ class AuthController extends Controller
     }
 
     // Proses login
-        public function login(Request $request)
+    public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -29,12 +31,10 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Email tidak ditemukan'])->withInput();
         }
 
-        // CEK VERIFIKASI
         if (!$user->is_verified) {
             return back()->withErrors(['email' => 'Akun belum diverifikasi. Silakan cek email Anda.'])->withInput();
         }
 
-        // ← BARU: CEK APPROVAL (KHUSUS PENYEWA)
         if ($user->role === 'penyewa' && !$user->is_approved) {
             return back()->withErrors([
                 'email' => 'Akun Anda sedang menunggu persetujuan admin. Anda akan dihubungi setelah disetujui.'
@@ -57,7 +57,7 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    // Proses registrasi
+    // Proses registrasi (KIRIM OTP KE EMAIL)
     public function register(Request $request)
     {
         $request->validate([
@@ -66,25 +66,35 @@ class AuthController extends Controller
             'password' => 'required|min:6|confirmed',
         ]);
 
-        // Generate kode verifikasi 6 digit
-        $verificationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Generate OTP 6 digit
+        $otpCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'penyewa',
-            'verification_code' => $verificationCode,
+            'otp_code' => $otpCode,
+            'otp_expires_at' => now()->addMinutes(10), // Expired 10 menit
             'is_verified' => false,
         ]);
 
-        // Simpan user_id di session untuk verifikasi
-        session(['verification_user_id' => $user->id]);
+        // Kirim OTP via email
+        try {
+            Mail::to($user->email)->send(new OTPMail($otpCode, $user->name));
+            
+            // Simpan user_id di session
+            session(['verification_user_id' => $user->id]);
 
-        return redirect()->route('verify.show')->with('success', "Registrasi berhasil! Kode verifikasi Anda: $verificationCode (Simpan kode ini)");
+            return redirect()->route('verify.show')->with('success', 'Registrasi berhasil! Kode OTP telah dikirim ke email Anda. Silakan cek inbox/spam.');
+        } catch (\Exception $e) {
+            // Jika gagal kirim email, hapus user dan tampilkan error
+            $user->delete();
+            return back()->withErrors(['email' => 'Gagal mengirim email. Pastikan email valid.'])->withInput();
+        }
     }
 
-    // Tampilkan form verifikasi
+    // Tampilkan form verifikasi OTP
     public function showVerify()
     {
         if (!session('verification_user_id')) {
@@ -94,11 +104,11 @@ class AuthController extends Controller
         return view('auth.verify');
     }
 
-    // Proses verifikasi
+    // Proses verifikasi OTP
     public function verify(Request $request)
     {
         $request->validate([
-            'verification_code' => 'required|size:6',
+            'otp_code' => 'required|size:6',
         ]);
 
         $userId = session('verification_user_id');
@@ -108,18 +118,57 @@ class AuthController extends Controller
             return back()->withErrors(['error' => 'User tidak ditemukan']);
         }
 
-        if ($user->verification_code === $request->verification_code) {
+        // Cek OTP expired
+        if ($user->isOtpExpired()) {
+            return back()->withErrors(['otp_code' => 'Kode OTP sudah kadaluarsa. Silakan registrasi ulang.'])->withInput();
+        }
+
+        // Cek OTP match
+        if ($user->otp_code === $request->otp_code) {
             $user->update([
                 'is_verified' => true,
-                'verification_code' => null,
+                'otp_code' => null,
+                'otp_expires_at' => null,
             ]);
 
             session()->forget('verification_user_id');
 
-            return redirect()->route('login')->with('success', 'Verifikasi berhasil! Silakan login.');
+            return redirect()->route('login')->with('success', 'Verifikasi berhasil! Silakan login. Akun Anda akan segera di-review oleh admin.');
         }
 
-        return back()->withErrors(['verification_code' => 'Kode verifikasi salah'])->withInput();
+        return back()->withErrors(['otp_code' => 'Kode OTP salah'])->withInput();
+    }
+
+    // Resend OTP
+    public function resendOtp()
+    {
+        $userId = session('verification_user_id');
+        
+        if (!$userId) {
+            return redirect()->route('register')->withErrors(['error' => 'Session expired. Silakan registrasi ulang.']);
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect()->route('register')->withErrors(['error' => 'User tidak ditemukan']);
+        }
+
+        // Generate OTP baru
+        $otpCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $user->update([
+            'otp_code' => $otpCode,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        // Kirim ulang via email
+        try {
+            Mail::to($user->email)->send(new OTPMail($otpCode, $user->name));
+            return back()->with('success', 'Kode OTP baru telah dikirim ke email Anda!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Gagal mengirim email. Coba lagi.']);
+        }
     }
 
     // Logout

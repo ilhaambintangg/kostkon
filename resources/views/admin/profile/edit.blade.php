@@ -63,6 +63,8 @@
                         @csrf
                         @method('PUT')
 
+                        <h6 class="mb-3"><i class="bi bi-person-badge me-2"></i>Data Pribadi</h6>
+
                         <div class="mb-3">
                             <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                             <input type="text" 
@@ -113,7 +115,55 @@
 
                         <hr>
 
-                        <h6 class="mb-3">Ubah Password (Opsional)</h6>
+                        <h6 class="mb-3"><i class="bi bi-bank me-2"></i>Informasi Rekening</h6>
+                        <p class="text-muted small">Untuk keperluan transfer dana atau pengembalian</p>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nama Bank</label>
+                            <select name="bank_name" class="form-select @error('bank_name') is-invalid @enderror">
+                                <option value="">-- Pilih Bank --</option>
+                                <option value="BCA" {{ old('bank_name', $admin->bank_name) == 'BCA' ? 'selected' : '' }}>BCA</option>
+                                <option value="Mandiri" {{ old('bank_name', $admin->bank_name) == 'Mandiri' ? 'selected' : '' }}>Mandiri</option>
+                                <option value="BNI" {{ old('bank_name', $admin->bank_name) == 'BNI' ? 'selected' : '' }}>BNI</option>
+                                <option value="BRI" {{ old('bank_name', $admin->bank_name) == 'BRI' ? 'selected' : '' }}>BRI</option>
+                                <option value="CIMB Niaga" {{ old('bank_name', $admin->bank_name) == 'CIMB Niaga' ? 'selected' : '' }}>CIMB Niaga</option>
+                                <option value="Danamon" {{ old('bank_name', $admin->bank_name) == 'Danamon' ? 'selected' : '' }}>Danamon</option>
+                                <option value="Permata" {{ old('bank_name', $admin->bank_name) == 'Permata' ? 'selected' : '' }}>Permata</option>
+                                <option value="BSI" {{ old('bank_name', $admin->bank_name) == 'BSI' ? 'selected' : '' }}>BSI (Bank Syariah Indonesia)</option>
+                                <option value="Lainnya" {{ old('bank_name', $admin->bank_name) == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                            </select>
+                            @error('bank_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nomor Rekening</label>
+                            <input type="text" 
+                                   name="account_number" 
+                                   class="form-control @error('account_number') is-invalid @enderror" 
+                                   value="{{ old('account_number', $admin->account_number) }}" 
+                                   placeholder="1234567890">
+                            @error('account_number')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Nama Pemilik Rekening</label>
+                            <input type="text" 
+                                   name="account_holder_name" 
+                                   class="form-control @error('account_holder_name') is-invalid @enderror" 
+                                   value="{{ old('account_holder_name', $admin->account_holder_name) }}" 
+                                   placeholder="Sesuai nama di buku rekening">
+                            @error('account_holder_name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <hr>
+
+                        <h6 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Ubah Password (Opsional)</h6>
 
                         <div class="mb-3">
                             <label class="form-label">Password Lama</label>

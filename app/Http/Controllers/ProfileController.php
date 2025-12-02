@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
@@ -15,7 +16,7 @@ class ProfileController extends Controller
         return view('penyewa.profile.edit', compact('user'));
     }
 
-    // Update profile
+    // Update profile (FIX BUG: Tidak logout setelah update)
     public function update(Request $request)
     {
         $user = auth()->user();
@@ -24,12 +25,15 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
+            'bank_name' => 'nullable|string|max:100',
+            'account_number' => 'nullable|string|max:50',
+            'account_holder_name' => 'nullable|string|max:255',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:6|confirmed',
         ]);
 
-        $data = $request->only(['name', 'email', 'phone']);
+        $data = $request->only(['name', 'email', 'phone', 'bank_name', 'account_number', 'account_holder_name']);
 
         // Upload foto profil
         if ($request->hasFile('profile_photo')) {
@@ -48,7 +52,11 @@ class ProfileController extends Controller
             $data['password'] = Hash::make($request->new_password);
         }
 
+        // ← FIX BUG: Update tanpa logout
         $user->update($data);
+
+        // ← PENTING: Refresh user data di session tanpa logout
+        Auth::setUser($user->fresh());
 
         return back()->with('success', 'Profile berhasil diperbarui!');
     }
@@ -61,6 +69,9 @@ class ProfileController extends Controller
         if ($user->profile_photo) {
             Storage::disk('public')->delete($user->profile_photo);
             $user->update(['profile_photo' => null]);
+            
+            // Refresh session
+            Auth::setUser($user->fresh());
         }
 
         return back()->with('success', 'Foto profil berhasil dihapus!');

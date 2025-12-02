@@ -16,25 +16,31 @@ class User extends Authenticatable
         'password',
         'role',
         'verification_code',
+        'otp_code',              // ← BARU
+        'otp_expires_at',        // ← BARU
         'is_verified',
         'is_approved',
         'approved_at',
         'approved_by',
         'profile_photo',
         'phone',
+        'bank_name',             // ← BARU
+        'account_number',        // ← BARU
+        'account_holder_name',   // ← BARU
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',              // ← BARU: Hide dari API
     ];
 
-    // ← PERBAIKI BAGIAN INI
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'approved_at' => 'datetime',        // ← PENTING: Cast ke datetime
+            'approved_at' => 'datetime',
+            'otp_expires_at' => 'datetime',   // ← BARU
             'password' => 'hashed',
             'is_verified' => 'boolean',
             'is_approved' => 'boolean',
@@ -50,5 +56,11 @@ class User extends Authenticatable
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // ← BARU: Helper method untuk cek OTP expired
+    public function isOtpExpired()
+    {
+        return $this->otp_expires_at && now()->isAfter($this->otp_expires_at);
     }
 }
