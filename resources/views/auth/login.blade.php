@@ -56,11 +56,10 @@
 
             <hr class="my-4">
 
-            <div class="alert alert-info">
-                <strong>Demo Akun:</strong><br>
+            <div class="alert alert-warning">
                 <small>
-                    <strong>Admin:</strong> admin@kostkon.com / admin123<br>
-                    <strong>Penyewa:</strong> budi@gmail.com / budi123
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Perhatian:</strong> User baru harus menunggu persetujuan admin sebelum bisa login.
                 </small>
             </div>
         </div>

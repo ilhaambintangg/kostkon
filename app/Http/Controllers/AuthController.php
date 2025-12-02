@@ -16,7 +16,7 @@ class AuthController extends Controller
     }
 
     // Proses login
-    public function login(Request $request)
+        public function login(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -29,8 +29,16 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Email tidak ditemukan'])->withInput();
         }
 
+        // CEK VERIFIKASI
         if (!$user->is_verified) {
-            return back()->withErrors(['email' => 'Akun belum diverifikasi'])->withInput();
+            return back()->withErrors(['email' => 'Akun belum diverifikasi. Silakan cek email Anda.'])->withInput();
+        }
+
+        // ← BARU: CEK APPROVAL (KHUSUS PENYEWA)
+        if ($user->role === 'penyewa' && !$user->is_approved) {
+            return back()->withErrors([
+                'email' => 'Akun Anda sedang menunggu persetujuan admin. Anda akan dihubungi setelah disetujui.'
+            ])->withInput();
         }
 
         if (!Hash::check($request->password, $user->password)) {

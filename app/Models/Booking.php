@@ -14,14 +14,18 @@ class Booking extends Model
         'user_id',
         'start_date',
         'end_date',
+        'payment_amount',      // ← BARU
         'status',
         'payment_image',
+        'refund_proof',        // ← BARU
+        'rejection_reason',    // ← BARU
         'notes',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'payment_amount' => 'decimal:2',  // ← BARU
     ];
 
     // Relasi
@@ -33,5 +37,16 @@ class Booking extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // ← BARU: Helper method untuk cek status
+    public function isCompleted()
+    {
+        return $this->status === 'Completed';
+    }
+
+    public function canBeDeleted()
+    {
+        return in_array($this->status, ['Completed', 'Rejected']);
     }
 }

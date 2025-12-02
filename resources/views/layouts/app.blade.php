@@ -34,6 +34,7 @@
         }
         .main-content {
             padding: 30px;
+            margin-left: 250px;
         }
         .card {
             border: none;
@@ -46,6 +47,18 @@
         }
         .btn-primary:hover {
             background: #2980b9;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px 15px;
+                padding-top: 70px;
+            }
         }
     </style>
     
