@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AdminUserController extends Controller
 {
@@ -41,27 +43,25 @@ class AdminUserController extends Controller
         return back()->with('success', "User {$user->name} berhasil disetujui!");
     }
 
-    // Reject user (hapus dari sistem)
+    // Reject user
     public function reject(User $user)
     {
         if ($user->role !== 'penyewa') {
             return back()->withErrors(['error' => 'Invalid action']);
         }
 
-        // Hapus foto profil jika ada
         if ($user->profile_photo) {
             Storage::disk('public')->delete($user->profile_photo);
         }
 
         $user->delete();
 
-        return back()->with('success', 'User berhasil ditolak dan dihapus dari sistem.');
+        return back()->with('success', 'User berhasil ditolak dan dihapus.');
     }
 
-    // ← BARU: Delete user (untuk user yang sudah approved)
+    // Delete user approve
     public function destroy(User $user)
     {
-        // Cek tidak bisa hapus admin atau diri sendiri
         if ($user->role === 'admin') {
             return back()->withErrors(['error' => 'Tidak bisa menghapus akun admin!']);
         }
@@ -70,12 +70,11 @@ class AdminUserController extends Controller
             return back()->withErrors(['error' => 'Tidak bisa menghapus akun sendiri!']);
         }
 
-        // Hapus foto profil jika ada
         if ($user->profile_photo) {
             Storage::disk('public')->delete($user->profile_photo);
         }
 
-        // Hapus semua booking terkait (cascade)
+        // Hapus booking + bukti
         $user->bookings()->each(function($booking) {
             if ($booking->payment_image) {
                 Storage::disk('public')->delete($booking->payment_image);
@@ -86,20 +85,20 @@ class AdminUserController extends Controller
             $booking->delete();
         });
 
-        $userName = $user->name;
+        $name = $user->name;
         $user->delete();
 
-        return back()->with('success', "User {$userName} berhasil dihapus dari sistem!");
+        return back()->with('success', "User {$name} berhasil dihapus!");
     }
 
-    // Admin profile
+    // Halaman edit profile admin
     public function editProfile()
     {
         $admin = auth()->user();
         return view('admin.profile.edit', compact('admin'));
     }
 
-    // Update admin profile (FIX BUG SAMA)
+    // Update profile admin
     public function updateProfile(Request $request)
     {
         $admin = auth()->user();
@@ -112,32 +111,42 @@ class AdminUserController extends Controller
             'account_number' => 'nullable|string|max:50',
             'account_holder_name' => 'nullable|string|max:255',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'current_password' => 'nullable|required_with:new_password',
+
+            // Password
+            'current_password' => 'nullable',
             'new_password' => 'nullable|min:6|confirmed',
         ]);
 
-        $data = $request->only(['name', 'email', 'phone', 'bank_name', 'account_number', 'account_holder_name']);
+        $data = $request->only([
+            'name', 'email', 'phone',
+            'bank_name', 'account_number', 'account_holder_name'
+        ]);
 
         // Upload foto profil
         if ($request->hasFile('profile_photo')) {
             if ($admin->profile_photo) {
                 Storage::disk('public')->delete($admin->profile_photo);
             }
+
             $data['profile_photo'] = $request->file('profile_photo')->store('profiles', 'public');
         }
 
         // Update password jika diisi
-        if ($request->filled('current_password')) {
-            if (!\Hash::check($request->current_password, $admin->password)) {
+        if ($request->filled('new_password')) {
+
+            // Pastikan current password benar
+            if (!Hash::check($request->current_password, $admin->password)) {
                 return back()->withErrors(['current_password' => 'Password lama salah'])->withInput();
             }
-            $data['password'] = \Hash::make($request->new_password);
+
+            // Hash password baru
+            $data['password'] = Hash::make($request->new_password);
         }
 
-        // Update tanpa logout
+        // Update ke database
         $admin->update($data);
-        
-        // Refresh session
+
+        // Refresh session agar tidak logout setelah ubah password
         Auth::setUser($admin->fresh());
 
         return back()->with('success', 'Profile berhasil diperbarui!');

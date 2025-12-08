@@ -435,7 +435,7 @@
                             <i class="bi bi-whatsapp text-success me-2 fs-5"></i>
                             <div>
                                 <small class="d-block">WhatsApp Admin</small>
-                                <strong>+62 812-3456-7890</strong>
+                                <strong>+62 895-1067-5368</strong>
                             </div>
                         </div>
                         <div class="d-flex align-items-center">
