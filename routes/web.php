@@ -9,6 +9,8 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\ResetPasswordController;
 
 // Landing page
 Route::get('/', function () {
@@ -17,13 +19,21 @@ Route::get('/', function () {
 
 // Guest Routes
 Route::middleware('guest')->group(function () {
+    // Login & Register
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/verify', [AuthController::class, 'showVerify'])->name('verify.show');
     Route::post('/verify', [AuthController::class, 'verify'])->name('verify');
-    Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp');  // ← BARU
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp');
+    
+    // Forgot Password Routes - TAMBAHKAN DI SINI
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+    
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
 // Authenticated Routes
@@ -37,7 +47,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::patch('/users/{user}/approve', [AdminUserController::class, 'approve'])->name('admin.users.approve');
         Route::delete('/users/{user}/reject', [AdminUserController::class, 'reject'])->name('admin.users.reject');
-        Route::delete('/users/{user}/delete', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');  // ← BARU
+        Route::delete('/users/{user}/delete', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
         
         // Admin Profile
         Route::get('/profile', [AdminUserController::class, 'editProfile'])->name('admin.profile.edit');

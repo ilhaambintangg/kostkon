@@ -145,6 +145,19 @@
             margin-top: 20px;
         }
 
+        .forgot-password-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .login-left {
                 display: none;
@@ -185,6 +198,13 @@
                     </div>
                 @endif
 
+                @if(session('status'))
+                    <div class="alert alert-info alert-dismissible fade show">
+                        <i class="bi bi-info-circle-fill me-2"></i>{{ session('status') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
                 @if($errors->any())
                     <div class="alert alert-danger alert-dismissible fade show">
                         @foreach($errors->all() as $error)
@@ -212,7 +232,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Password</label>
+                        <label class="form-label fw-bold d-block mb-1">Password</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input type="password" 
@@ -220,6 +240,23 @@
                                    class="form-control" 
                                    placeholder="Masukkan password Anda"
                                    required>
+                        </div>
+                        <!-- Link Lupa Password di sini, di bawah input password -->
+                        <div class="text-end mt-2">
+                            @if (Route::has('password.request'))
+                                <a href="{{ route('password.request') }}" class="forgot-password-link">
+                                    <i class="bi bi-question-circle me-1"></i>Lupa Password?
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                            <label class="form-check-label" for="remember">
+                                Ingat saya
+                            </label>
                         </div>
                     </div>
 
@@ -238,12 +275,6 @@
                 </form>
 
                 <hr class="my-4">
-
-                <div class="demo-accounts">
-                    <strong class="d-block mb-2"><i class="bi bi-info-circle me-2"></i>Akun Demo:</strong>
-                    <small class="d-block mb-1"><strong>Admin:</strong> admin@kostkon.com / admin123</small>
-                    <small class="d-block"><strong>Penyewa:</strong> budi@gmail.com / budi123</small>
-                </div>
             </div>
         </div>
     </div>
